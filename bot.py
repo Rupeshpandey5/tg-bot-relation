@@ -1,12 +1,10 @@
 import os
 import random
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Environment variable me set kiya hua token
-TOKEN = os.getenv("TOKEN")
-
-# ---------------- TRUTHS ----------------
+# ===================== DATA =====================
 TRUTHS = [
     "Sabse bada secret kya hai? 🤫",
     "Group me sabse zyada kaun pasand hai? 😏",
@@ -30,7 +28,6 @@ TRUTHS = [
     "Aaj ka mood honestly batao 😇"
 ]
 
-# ---------------- DARES ----------------
 DARES = [
     "Apna nickname batao 😎",
     "Group me 3 emojis bhejo 🔥😂💯",
@@ -54,38 +51,17 @@ DARES = [
     "Aaj ka time batao jab uthe the ⏰"
 ]
 
-# ---------------- RELATIONS ----------------
 RELATIONS = [
-    "🤝 Besties",
-    "🖤 Toxic & Loyal",
-    "😈 Devil & Angel",
-    "👑 King & Killer Queen",
-    "🐍 Snake & Charmer",
-    "⚡ Thunder & Lightning",
-    "😎 Boss & Queen",
-    "🤪 Drama King & Queen",
-    "🔥 Fire & Spark",
-    "🐒 Monkey & Banana",
-    "🍕 Pizza & Coke",
-    "🎧 DJ & Listener",
-    "💕 Love Birds",
-    "💖 Soulmates",
-    "💘 Heartbeat Duo",
-    "💞 Forever Pair",
-    "🌹 Rose & Thorn",
-    "🌙 Moon & Star",
-    "☀️ Sun & Sunshine",
-    "Best Friends Forever 🤝",
-    "Chill Buddy 😎",
-    "Lucky Pair 🍀",
-    "Study Partners 📚",
-    "College Buddies 🎓",
-    "Secret Supporters 🤫",
-    "Power Duo 💪",
-    "Dream Team 🌈"
+    "🤝 Besties", "🖤 Toxic & Loyal", "😈 Devil & Angel", "👑 King & Killer Queen",
+    "🐍 Snake & Charmer", "⚡ Thunder & Lightning", "😎 Boss & Queen", "🤪 Drama King & Queen",
+    "🔥 Fire & Spark", "🐒 Monkey & Banana", "🍕 Pizza & Coke", "🎧 DJ & Listener",
+    "💕 Love Birds", "💖 Soulmates", "💘 Heartbeat Duo", "💞 Forever Pair",
+    "🌹 Rose & Thorn", "🌙 Moon & Star", "☀️ Sun & Sunshine",
+    "Best Friends Forever 🤝", "Chill Buddy 😎", "Lucky Pair 🍀", "Study Partners 📚",
+    "College Buddies 🎓", "Secret Supporters 🤫", "Power Duo 💪", "Dream Team 🌈"
 ]
 
-# ---------------- COMMAND FUNCTIONS ----------------
+# ===================== HANDLERS =====================
 async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(TRUTHS))
 
@@ -97,18 +73,16 @@ async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat.type not in ["group", "supergroup"]:
         await update.message.reply_text("Ye command sirf group me kaam karti hai ❌")
         return
+
     admins = await context.bot.get_chat_administrators(chat.id)
     users = [admin.user for admin in admins]
     if len(users) < 2:
         await update.message.reply_text("Group me kam se kam 2 admin hone chahiye 😅")
         return
+
     u1, u2 = random.sample(users, 2)
-    relation = random.choice(RELATIONS)
-    msg = (
-        f"💞 Random Relation Found! 💞\n\n"
-        f"👤 {u1.mention_html()} 🤝 {u2.mention_html()}\n"
-        f"🔗 Relation: <b>{relation}</b>"
-    )
+    relation_choice = random.choice(RELATIONS)
+    msg = f"💞 Random Relation Found! 💞\n\n👤 {u1.mention_html()} 🤝 {u2.mention_html()}\n🔗 Relation: <b>{relation_choice}</b>"
     await update.message.reply_html(msg)
 
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -116,34 +90,36 @@ async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat.type not in ["group", "supergroup"]:
         await update.message.reply_text("Ye command sirf group me kaam karti hai ❌")
         return
+
     members_count = await chat.get_member_count()
     if members_count < 2:
         await update.message.reply_text("Kam se kam 2 member hone chahiye 😅")
         return
+
     admins = await context.bot.get_chat_administrators(chat.id)
     users = [admin.user for admin in admins]
     if len(users) < 2:
         await update.message.reply_text("Kam se kam 2 admin hone chahiye 😅")
         return
+
     u1, u2 = random.sample(users, 2)
-    pair_names = RELATIONS  # Same as relation list
-    pair_name = random.choice(pair_names)
-    msg = (
-        "💘 Special Pair 💘\n\n"
-        f"{u1.mention_html()} ❤️ {u2.mention_html()}\n\n"
-        f"✨ <b>{pair_name}</b>"
-    )
+    pair_name = random.choice(RELATIONS)  # Reuse RELATIONS for fun pairs
+    msg = f"💘 Special Pair 💘\n\n{u1.mention_html()} ❤️ {u2.mention_html()}\n\n✨ <b>{pair_name}</b>"
     await update.message.reply_html(msg)
 
-# ---------------- RUN BOT ----------------
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TOKEN).build()
+# ===================== MAIN =====================
+TOKEN = os.getenv("TOKEN")  # Render me environment variable me daala hua token
 
+async def main():
+    app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("truth", truth))
     app.add_handler(CommandHandler("dare", dare))
     app.add_handler(CommandHandler("relation", relation))
     app.add_handler(CommandHandler("pair", pair))
 
     print("🤖 Bot is running...")
-    # direct run_polling without asyncio.run
-    app.run_polling()
+    await app.run_polling()
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
