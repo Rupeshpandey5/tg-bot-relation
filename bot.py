@@ -1,5 +1,6 @@
 import os
 import random
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
@@ -172,7 +173,7 @@ async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 TOKEN = os.getenv("TOKEN")
 
-if __name__ == "__main__":
+async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("truth", truth))
@@ -181,4 +182,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("pair", pair))
 
     print("🤖 Bot is running...")
-    app.run_polling()
+    await app.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
