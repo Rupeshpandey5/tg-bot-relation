@@ -1,12 +1,13 @@
 import os
 import random
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from flask import Flask
 
 # ---------------- ENV VARIABLES ---------------- #
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-PORT = int(os.environ.get("PORT", 10000))  # Render provides this
+PORT = int(os.environ.get("PORT", 10000))
 
 # ---------------- TRUTHS & DARES ---------------- #
 TRUTHS = [
@@ -113,7 +114,9 @@ PAIR_NAMES = [
 
 # ---------------- TELEGRAM HANDLERS ---------------- #
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome! Use /truth, /dare, /relation or /pair")
+    await update.message.reply_text(
+        "Welcome! Use /truth, /dare, /relation or /pair"
+    )
 
 async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(TRUTHS))
@@ -122,10 +125,24 @@ async def dare(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(DARES))
 
 async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(random.choice(RELATIONS))
+    chat = update.effective_chat
+    members = [m.user for m in await chat.get_administrators()]
+    if len(members) < 2:
+        await update.message.reply_text("Group me kam se kam 2 members hone chahiye!")
+        return
+    a, b = random.sample(members, 2)
+    text = f"{a.mention_markdown()} & {b.mention_markdown()} : {random.choice(RELATIONS)}"
+    await update.message.reply_markdown(text)
 
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(random.choice(PAIR_NAMES))
+    chat = update.effective_chat
+    members = [m.user for m in await chat.get_administrators()]
+    if len(members) < 2:
+        await update.message.reply_text("Group me kam se kam 2 members hone chahiye!")
+        return
+    a, b = random.sample(members, 2)
+    text = f"{a.mention_markdown()} & {b.mention_markdown()} : {random.choice(PAIR_NAMES)}"
+    await update.message.reply_markdown(text)
 
 # ---------------- FLASK + BOT ---------------- #
 app = Flask(__name__)
@@ -135,7 +152,6 @@ def index():
     return "Bot is running!"
 
 if __name__ == "__main__":
-    # Telegram Bot application
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
@@ -144,8 +160,8 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("relation", relation))
     application.add_handler(CommandHandler("pair", pair))
 
-    # Run bot **in main thread** for Render
-    application.run_polling(poll_interval=1.0)
+    # Run bot in polling mode using asyncio in main thread
+    asyncio.get_event_loop().create_task(application.run_polling())
 
-    # Run Flask app to keep Render happy (health check)
+    # Run Flask app to keep Render happy
     app.run(host="0.0.0.0", port=PORT)
