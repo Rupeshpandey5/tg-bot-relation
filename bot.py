@@ -1,10 +1,15 @@
 import os
 import random
+from threading import Thread
+from flask import Flask
 from telebot import TeleBot, types
 
 # ---------------- BOT TOKEN ---------------- #
-TOKEN = os.getenv("BOT_TOKEN")  # Render me secret env variable se
+TOKEN = os.getenv("BOT_TOKEN")
 bot = TeleBot(TOKEN)
+
+# ---------------- FLASK APP ---------------- #
+app = Flask(__name__)
 
 # ---------------- DATA ---------------- #
 TRUTHS = [
@@ -109,25 +114,19 @@ PAIR_NAMES = [
     "☀️ Sun & Sunshine"
 ]
 
-# ---------------- COMMANDS ---------------- #
-
+# ---------------- BOT COMMANDS ---------------- #
 @bot.message_handler(commands=["start"])
 def start(message):
-    bot.reply_to(message, "Hey! Main aapka Truth & Dare Bot hoon. 🎉\nCommands: /truth, /dare, /relation, /pair")
+    bot.reply_to(message, "Hey! Main aapka Truth & Dare Bot hoon. 🎉\nCommands: /truth, /dare, /relation, /pair, /all")
 
-# Truth command
 @bot.message_handler(commands=["truth"])
 def truth(message):
-    choice = random.choice(TRUTHS)
-    bot.reply_to(message, f"💡 Truth: {choice}")
+    bot.reply_to(message, f"💡 Truth: {random.choice(TRUTHS)}")
 
-# Dare command
 @bot.message_handler(commands=["dare"])
 def dare(message):
-    choice = random.choice(DARES)
-    bot.reply_to(message, f"💪 Dare: {choice}")
+    bot.reply_to(message, f"💪 Dare: {random.choice(DARES)}")
 
-# Relation command (2 members randomly)
 @bot.message_handler(commands=["relation"])
 def relation(message):
     chat = message.chat
@@ -141,12 +140,11 @@ def relation(message):
             member2 = random.choice([m.user.first_name for m in members if m.user.first_name != member1])
             relation = random.choice(RELATIONS)
             bot.reply_to(message, f"{member1} ❤️ {member2} = {relation}")
-        except Exception as e:
+        except:
             bot.reply_to(message, "Error fetching members. Ensure bot is admin.")
     else:
         bot.reply_to(message, "Ye command group me hi kaam karega.")
 
-# Pair command (sirf admin ka naam le)
 @bot.message_handler(commands=["pair"])
 def pair(message):
     chat = message.chat
@@ -157,12 +155,22 @@ def pair(message):
     else:
         bot.reply_to(message, "Ye command group me hi kaam karega.")
 
-# All truths/dares
 @bot.message_handler(commands=["all"])
 def all_items(message):
     text = "💡 Truths:\n" + "\n".join(TRUTHS) + "\n\n💪 Dares:\n" + "\n".join(DARES)
     bot.reply_to(message, text)
 
-# ---------------- RUN BOT ---------------- #
-if __name__ == "__main__":
+# ---------------- START BOT IN THREAD ---------------- #
+def start_bot():
     bot.infinity_polling()
+
+Thread(target=start_bot).start()
+
+# ---------------- FLASK ROUTE FOR RENDER PORT ---------------- #
+@app.route("/")
+def home():
+    return "Bot is running ✅"
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
