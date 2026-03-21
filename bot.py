@@ -1,13 +1,13 @@
 import os
 import random
-import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from flask import Flask
+import threading
 
 # ---------------- ENV VARIABLES ---------------- #
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-PORT = int(os.environ.get("PORT", 10000))  # Render port
+PORT = int(os.environ.get("PORT", 10000))
 
 # ---------------- TRUTHS & DARES ---------------- #
 TRUTHS = [
@@ -56,67 +56,22 @@ DARES = [
     "Aaj ka time batao jab uthe the ⏰"
 ]
 
-RELATIONS = [
-    "🤝 Besties",
-    "🖤 Toxic & Loyal",
-    "😈 Devil & Angel",
-    "👑 King & Killer Queen",
-    "🐍 Snake & Charmer",
-    "⚡ Thunder & Lightning",
-    "😎 Boss & Queen",
-    "🤪 Drama King & Queen",
-    "🔥 Fire & Spark",
-    "🐒 Monkey & Banana",
-    "🍕 Pizza & Coke",
-    "🎧 DJ & Listener",
-    "💕 Love Birds",
-    "💖 Soulmates",
-    "💘 Heartbeat Duo",
-    "💞 Forever Pair",
-    "🌹 Rose & Thorn",
-    "🌙 Moon & Star",
-    "☀️ Sun & Sunshine",
-    "Best Friends Forever 🤝",
-    "Chill Buddy 😎",
-    "Lucky Pair 🍀",
-    "Study Partners 📚",
-    "College Buddies 🎓",
-    "Secret Supporters 🤫",
-    "Power Duo 💪",
-    "Dream Team 🌈"
+RELATIONS_LIST = [
+    "🤝 Besties", "🖤 Toxic & Loyal", "😈 Devil & Angel", "👑 King & Killer Queen",
+    "🐍 Snake & Charmer", "⚡ Thunder & Lightning", "😎 Boss & Queen",
+    "🤪 Drama King & Queen", "🔥 Fire & Spark", "🐒 Monkey & Banana",
+    "🍕 Pizza & Coke", "🎧 DJ & Listener", "💕 Love Birds", "💖 Soulmates",
+    "💘 Heartbeat Duo", "💞 Forever Pair", "🌹 Rose & Thorn", "🌙 Moon & Star",
+    "☀️ Sun & Sunshine", "Best Friends Forever 🤝", "Chill Buddy 😎",
+    "Lucky Pair 🍀", "Study Partners 📚", "College Buddies 🎓",
+    "Secret Supporters 🤫", "Power Duo 💪", "Dream Team 🌈"
 ]
 
-PAIR_NAMES = [
-    "🔥 Fire & Spark",
-    "🌙 Moon & Star",
-    "😎 Boss & Queen",
-    "💘 Crush Couple",
-    "✨ Golden Duo",
-    "👑 King & Queen",
-    "💞 Dil & Dhadkan",
-    "🫶 Bestie Pair",
-    "🤝 Besties",
-    "MOTU AND PATLU",
-    "🖤 Toxic & Loyal",
-    "😈 Devil & Angel",
-    "👑 King & Killer Queen",
-    "🤪 Drama King & Queen",
-    "🐒 Monkey & Banana",
-    "🍕 Pizza & Coke",
-    "🎧 DJ & Listener",
-    "💕 Love Birds",
-    "💖 Soulmates",
-    "💘 Heartbeat Duo",
-    "💞 Forever Pair",
-    "🌹 Rose & Thorn",
-    "☀️ Sun & Sunshine"
-]
+PAIR_NAMES = RELATIONS_LIST  # Same pool for /pair
 
 # ---------------- TELEGRAM HANDLERS ---------------- #
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Welcome! Use /truth, /dare, /relation, or /pair"
-    )
+    await update.message.reply_text("Welcome! Use /truth, /dare, /relation or /pair")
 
 async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(TRUTHS))
@@ -125,34 +80,24 @@ async def dare(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(DARES))
 
 async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    admins = await context.bot.get_chat_administrators(chat.id)
-    members = [a.user for a in admins if not a.user.is_bot]
-
+    # Pick 2 random members from group chat
+    members = [m.user for m in await update.effective_chat.get_members() if not m.user.is_bot]
     if len(members) < 2:
-        await update.message.reply_text("Group me kam se kam 2 active members hone chahiye.")
+        await update.message.reply_text("Not enough members in the group.")
         return
-
     user1, user2 = random.sample(members, 2)
-    relation_choice = random.choice(RELATIONS)
-    await update.message.reply_html(
-        f"{user1.mention_html()} & {user2.mention_html()} are {relation_choice}!"
-    )
+    relation = random.choice(RELATIONS_LIST)
+    await update.message.reply_text(f"{user1.mention_html()} & {user2.mention_html()} : {relation}", parse_mode="HTML")
 
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    admins = await context.bot.get_chat_administrators(chat.id)
-    admin_users = [a.user for a in admins if not a.user.is_bot]
-
-    if len(admin_users) < 2:
-        await update.message.reply_text("Group me kam se kam 2 admins hone chahiye.")
+    # Pick 2 admins from group
+    admins = [m.user for m in await update.effective_chat.get_administrators()]
+    if len(admins) < 2:
+        await update.message.reply_text("Not enough admins in the group.")
         return
-
-    user1, user2 = random.sample(admin_users, 2)
-    pair_choice = random.choice(PAIR_NAMES)
-    await update.message.reply_html(
-        f"{user1.mention_html()} & {user2.mention_html()} are {pair_choice}!"
-    )
+    admin1, admin2 = random.sample(admins, 2)
+    pair_name = random.choice(PAIR_NAMES)
+    await update.message.reply_text(f"{admin1.mention_html()} & {admin2.mention_html()} : {pair_name}", parse_mode="HTML")
 
 # ---------------- FLASK + BOT ---------------- #
 app = Flask(__name__)
@@ -161,20 +106,19 @@ app = Flask(__name__)
 def index():
     return "Bot is running!"
 
-if __name__ == "__main__":
+def start_bot():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("truth", truth))
     application.add_handler(CommandHandler("dare", dare))
     application.add_handler(CommandHandler("relation", relation))
     application.add_handler(CommandHandler("pair", pair))
 
-    # Run bot in asyncio loop
-    import threading
-    def run_bot():
-        asyncio.run(application.run_polling())
+    # Run bot safely on Render
+    application.run_polling(close_loop=False)
 
-    threading.Thread(target=run_bot).start()
-    # Flask app to keep Render alive
+# Start bot in a separate thread
+threading.Thread(target=start_bot).start()
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
