@@ -1,5 +1,6 @@
 import os
 import random
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from flask import Flask
@@ -135,21 +136,22 @@ app = Flask(__name__)
 def index():
     return "Bot is running!"
 
-if __name__ == "__main__":
-    # Telegram Bot application
+def start_telegram_bot():
+    """Run Telegram bot in asyncio main loop (Render-friendly)"""
     application = ApplicationBuilder().token(BOT_TOKEN).build()
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("truth", truth))
     application.add_handler(CommandHandler("dare", dare))
     application.add_handler(CommandHandler("relation", relation))
     application.add_handler(CommandHandler("pair", pair))
 
-    # Run bot in polling mode
-    import threading
-    def run_bot():
-        application.run_polling()
+    # Run the bot on the main thread using asyncio
+    asyncio.run(application.run_polling())
 
-    threading.Thread(target=run_bot).start()
-    # Run Flask app to keep Render happy
+if __name__ == "__main__":
+    import threading
+    # Start Telegram bot in a separate thread to avoid Render signal issues
+    threading.Thread(target=start_telegram_bot).start()
+
+    # Run Flask to keep Render happy
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
