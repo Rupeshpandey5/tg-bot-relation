@@ -1,13 +1,13 @@
 import os
 import random
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from flask import Flask
-import threading
 
 # ---------------- ENV VARIABLES ---------------- #
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-MEMBERS = os.environ.get("MEMBERS", "").split(",")  # comma separated usernames
+PORT = int(os.environ.get("PORT", 10000))  # Render port
 
 # ---------------- TRUTHS & DARES ---------------- #
 TRUTHS = [
@@ -75,7 +75,15 @@ RELATIONS = [
     "💞 Forever Pair",
     "🌹 Rose & Thorn",
     "🌙 Moon & Star",
-    "☀️ Sun & Sunshine"
+    "☀️ Sun & Sunshine",
+    "Best Friends Forever 🤝",
+    "Chill Buddy 😎",
+    "Lucky Pair 🍀",
+    "Study Partners 📚",
+    "College Buddies 🎓",
+    "Secret Supporters 🤫",
+    "Power Duo 💪",
+    "Dream Team 🌈"
 ]
 
 PAIR_NAMES = [
@@ -91,6 +99,7 @@ PAIR_NAMES = [
     "MOTU AND PATLU",
     "🖤 Toxic & Loyal",
     "😈 Devil & Angel",
+    "👑 King & Killer Queen",
     "🤪 Drama King & Queen",
     "🐒 Monkey & Banana",
     "🍕 Pizza & Coke",
@@ -105,7 +114,9 @@ PAIR_NAMES = [
 
 # ---------------- TELEGRAM HANDLERS ---------------- #
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome! Use /truth, /dare, /relation, /pair")
+    await update.message.reply_text(
+        "Welcome! Use /truth, /dare, /relation, or /pair"
+    )
 
 async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(TRUTHS))
@@ -114,20 +125,34 @@ async def dare(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(DARES))
 
 async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(MEMBERS) < 2:
-        await update.message.reply_text("Add at least 2 members in MEMBERS env variable.")
+    chat = update.effective_chat
+    admins = await context.bot.get_chat_administrators(chat.id)
+    members = [a.user for a in admins if not a.user.is_bot]
+
+    if len(members) < 2:
+        await update.message.reply_text("Group me kam se kam 2 active members hone chahiye.")
         return
-    pair = random.sample(MEMBERS, 2)
-    relation_name = random.choice(RELATIONS)
-    await update.message.reply_text(f"{pair[0]} ❤️ {pair[1]} : {relation_name}")
+
+    user1, user2 = random.sample(members, 2)
+    relation_choice = random.choice(RELATIONS)
+    await update.message.reply_html(
+        f"{user1.mention_html()} & {user2.mention_html()} are {relation_choice}!"
+    )
 
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(MEMBERS) < 2:
-        await update.message.reply_text("Add at least 2 members in MEMBERS env variable.")
+    chat = update.effective_chat
+    admins = await context.bot.get_chat_administrators(chat.id)
+    admin_users = [a.user for a in admins if not a.user.is_bot]
+
+    if len(admin_users) < 2:
+        await update.message.reply_text("Group me kam se kam 2 admins hone chahiye.")
         return
-    pair = random.sample(MEMBERS, 2)
-    pair_name = random.choice(PAIR_NAMES)
-    await update.message.reply_text(f"{pair[0]} 🤝 {pair[1]} : {pair_name}")
+
+    user1, user2 = random.sample(admin_users, 2)
+    pair_choice = random.choice(PAIR_NAMES)
+    await update.message.reply_html(
+        f"{user1.mention_html()} & {user2.mention_html()} are {pair_choice}!"
+    )
 
 # ---------------- FLASK + BOT ---------------- #
 app = Flask(__name__)
@@ -136,7 +161,7 @@ app = Flask(__name__)
 def index():
     return "Bot is running!"
 
-def start_bot():
+if __name__ == "__main__":
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
@@ -145,12 +170,11 @@ def start_bot():
     application.add_handler(CommandHandler("relation", relation))
     application.add_handler(CommandHandler("pair", pair))
 
-    # run polling in main thread without asyncio issues
-    application.run_polling(stop_signals=None)
+    # Run bot in asyncio loop
+    import threading
+    def run_bot():
+        asyncio.run(application.run_polling())
 
-# ---------------- RUN BOT ---------------- #
-if __name__ == "__main__":
-    # Flask in separate thread
-    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), use_reloader=False)).start()
-    # Bot runs in main thread
-    start_bot()
+    threading.Thread(target=run_bot).start()
+    # Flask app to keep Render alive
+    app.run(host="0.0.0.0", port=PORT)
