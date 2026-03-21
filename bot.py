@@ -4,10 +4,11 @@ import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from flask import Flask
+import threading
 
 # ---------------- ENV VARIABLES ---------------- #
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-PORT = int(os.environ.get("PORT", 10000))
+MEMBERS = os.environ.get("MEMBERS", "").split(",")  # comma separated usernames
 
 # ---------------- TRUTHS & DARES ---------------- #
 TRUTHS = [
@@ -75,15 +76,7 @@ RELATIONS = [
     "💞 Forever Pair",
     "🌹 Rose & Thorn",
     "🌙 Moon & Star",
-    "☀️ Sun & Sunshine",
-    "Best Friends Forever 🤝",
-    "Chill Buddy 😎",
-    "Lucky Pair 🍀",
-    "Study Partners 📚",
-    "College Buddies 🎓",
-    "Secret Supporters 🤫",
-    "Power Duo 💪",
-    "Dream Team 🌈"
+    "☀️ Sun & Sunshine"
 ]
 
 PAIR_NAMES = [
@@ -99,7 +92,6 @@ PAIR_NAMES = [
     "MOTU AND PATLU",
     "🖤 Toxic & Loyal",
     "😈 Devil & Angel",
-    "👑 King & Killer Queen",
     "🤪 Drama King & Queen",
     "🐒 Monkey & Banana",
     "🍕 Pizza & Coke",
@@ -115,7 +107,7 @@ PAIR_NAMES = [
 # ---------------- TELEGRAM HANDLERS ---------------- #
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Welcome! Use /truth, /dare, /relation or /pair"
+        "Welcome! Use /truth, /dare, /relation, /pair"
     )
 
 async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -125,24 +117,20 @@ async def dare(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(DARES))
 
 async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    members = [m.user for m in await chat.get_administrators()]
-    if len(members) < 2:
-        await update.message.reply_text("Group me kam se kam 2 members hone chahiye!")
+    if len(MEMBERS) < 2:
+        await update.message.reply_text("Add at least 2 members in MEMBERS env variable.")
         return
-    a, b = random.sample(members, 2)
-    text = f"{a.mention_markdown()} & {b.mention_markdown()} : {random.choice(RELATIONS)}"
-    await update.message.reply_markdown(text)
+    pair = random.sample(MEMBERS, 2)
+    relation = random.choice(RELATIONS)
+    await update.message.reply_text(f"{pair[0]} ❤️ {pair[1]} : {relation}")
 
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    members = [m.user for m in await chat.get_administrators()]
-    if len(members) < 2:
-        await update.message.reply_text("Group me kam se kam 2 members hone chahiye!")
+    if len(MEMBERS) < 2:
+        await update.message.reply_text("Add at least 2 members in MEMBERS env variable.")
         return
-    a, b = random.sample(members, 2)
-    text = f"{a.mention_markdown()} & {b.mention_markdown()} : {random.choice(PAIR_NAMES)}"
-    await update.message.reply_markdown(text)
+    pair = random.sample(MEMBERS, 2)
+    pair_name = random.choice(PAIR_NAMES)
+    await update.message.reply_text(f"{pair[0]} 🤝 {pair[1]} : {pair_name}")
 
 # ---------------- FLASK + BOT ---------------- #
 app = Flask(__name__)
@@ -150,6 +138,9 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     return "Bot is running!"
+
+def start_bot():
+    asyncio.run(application.run_polling())
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -160,8 +151,8 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("relation", relation))
     application.add_handler(CommandHandler("pair", pair))
 
-    # Run bot in polling mode using asyncio in main thread
-    asyncio.get_event_loop().create_task(application.run_polling())
+    # Start bot in a separate thread
+    threading.Thread(target=start_bot).start()
 
-    # Run Flask app to keep Render happy
-    app.run(host="0.0.0.0", port=PORT)
+    # Start Flask server
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
