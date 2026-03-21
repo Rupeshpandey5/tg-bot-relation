@@ -3,7 +3,7 @@ import random
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from flask import Flask
-import asyncio
+import threading
 
 # ---------------- ENV VARIABLES ---------------- #
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -145,13 +145,12 @@ def start_bot():
     application.add_handler(CommandHandler("relation", relation))
     application.add_handler(CommandHandler("pair", pair))
 
-    # run polling in main thread without stop_signals to avoid Render async errors
+    # run polling in main thread without asyncio issues
     application.run_polling(stop_signals=None)
 
 # ---------------- RUN BOT ---------------- #
 if __name__ == "__main__":
-    # Flask runs on separate asyncio loop
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, start_bot)
-    # Run Flask server
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), use_reloader=False)
+    # Flask in separate thread
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), use_reloader=False)).start()
+    # Bot runs in main thread
+    start_bot()
