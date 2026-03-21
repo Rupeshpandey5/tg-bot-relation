@@ -1,10 +1,12 @@
 import os
 import random
-import asyncio
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telebot import TeleBot, types
 
-# ===================== DATA =====================
+# ---------------- BOT TOKEN ---------------- #
+TOKEN = os.getenv("BOT_TOKEN")  # Render me secret env variable se
+bot = TeleBot(TOKEN)
+
+# ---------------- DATA ---------------- #
 TRUTHS = [
     "Sabse bada secret kya hai? 🤫",
     "Group me sabse zyada kaun pasand hai? 😏",
@@ -45,81 +47,122 @@ DARES = [
     "Apna favourite movie ya web series batao 🎬",
     "Aaj ka mood ek sticker me bhejo 🧠",
     "Apni height ka guess batao 📏",
-    "Apna favourite food ka naam likho 🍕",
+    "Apni favourite food ka naam likho 🍕",
     "Kisi ek member ke liye positive line likho ✨",
     "Apna favourite subject batao 📘",
     "Aaj ka time batao jab uthe the ⏰"
 ]
 
 RELATIONS = [
-    "🤝 Besties", "🖤 Toxic & Loyal", "😈 Devil & Angel", "👑 King & Killer Queen",
-    "🐍 Snake & Charmer", "⚡ Thunder & Lightning", "😎 Boss & Queen", "🤪 Drama King & Queen",
-    "🔥 Fire & Spark", "🐒 Monkey & Banana", "🍕 Pizza & Coke", "🎧 DJ & Listener",
-    "💕 Love Birds", "💖 Soulmates", "💘 Heartbeat Duo", "💞 Forever Pair",
-    "🌹 Rose & Thorn", "🌙 Moon & Star", "☀️ Sun & Sunshine",
-    "Best Friends Forever 🤝", "Chill Buddy 😎", "Lucky Pair 🍀", "Study Partners 📚",
-    "College Buddies 🎓", "Secret Supporters 🤫", "Power Duo 💪", "Dream Team 🌈"
+    "🤝 Besties",
+    "🖤 Toxic & Loyal",
+    "😈 Devil & Angel",
+    "👑 King & Killer Queen",
+    "🐍 Snake & Charmer",
+    "⚡ Thunder & Lightning",
+    "😎 Boss & Queen",
+    "🤪 Drama King & Queen",
+    "🔥 Fire & Spark",
+    "🐒 Monkey & Banana",
+    "🍕 Pizza & Coke",
+    "🎧 DJ & Listener",
+    "💕 Love Birds",
+    "💖 Soulmates",
+    "💘 Heartbeat Duo",
+    "💞 Forever Pair",
+    "🌹 Rose & Thorn",
+    "🌙 Moon & Star",
+    "☀️ Sun & Sunshine",
+    "Best Friends Forever 🤝",
+    "Chill Buddy 😎",
+    "Lucky Pair 🍀",
+    "Study Partners 📚",
+    "College Buddies 🎓",
+    "Secret Supporters 🤫",
+    "Power Duo 💪",
+    "Dream Team 🌈"
 ]
 
-# ===================== HANDLERS =====================
-async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(random.choice(TRUTHS))
+PAIR_NAMES = [
+    "🔥 Fire & Spark",
+    "🌙 Moon & Star",
+    "😎 Boss & Queen",
+    "💘 Crush Couple",
+    "✨ Golden Duo",
+    "👑 King & Queen",
+    "💞 Dil & Dhadkan",
+    "🫶 Bestie Pair",
+    "🤝 Besties",
+    "MOTU AND PATLU",
+    "🖤 Toxic & Loyal",
+    "😈 Devil & Angel",
+    "👑 King & Killer Queen",
+    "🤪 Drama King & Queen",
+    "🐒 Monkey & Banana",
+    "🍕 Pizza & Coke",
+    "🎧 DJ & Listener",
+    "💕 Love Birds",
+    "💖 Soulmates",
+    "💘 Heartbeat Duo",
+    "💞 Forever Pair",
+    "🌹 Rose & Thorn",
+    "☀️ Sun & Sunshine"
+]
 
-async def dare(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(random.choice(DARES))
+# ---------------- COMMANDS ---------------- #
 
-async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    if chat.type not in ["group", "supergroup"]:
-        await update.message.reply_text("Ye command sirf group me kaam karti hai ❌")
-        return
+@bot.message_handler(commands=["start"])
+def start(message):
+    bot.reply_to(message, "Hey! Main aapka Truth & Dare Bot hoon. 🎉\nCommands: /truth, /dare, /relation, /pair")
 
-    admins = await context.bot.get_chat_administrators(chat.id)
-    users = [admin.user for admin in admins]
-    if len(users) < 2:
-        await update.message.reply_text("Group me kam se kam 2 admin hone chahiye 😅")
-        return
+# Truth command
+@bot.message_handler(commands=["truth"])
+def truth(message):
+    choice = random.choice(TRUTHS)
+    bot.reply_to(message, f"💡 Truth: {choice}")
 
-    u1, u2 = random.sample(users, 2)
-    relation_choice = random.choice(RELATIONS)
-    msg = f"💞 Random Relation Found! 💞\n\n👤 {u1.mention_html()} 🤝 {u2.mention_html()}\n🔗 Relation: <b>{relation_choice}</b>"
-    await update.message.reply_html(msg)
+# Dare command
+@bot.message_handler(commands=["dare"])
+def dare(message):
+    choice = random.choice(DARES)
+    bot.reply_to(message, f"💪 Dare: {choice}")
 
-async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    if chat.type not in ["group", "supergroup"]:
-        await update.message.reply_text("Ye command sirf group me kaam karti hai ❌")
-        return
+# Relation command (2 members randomly)
+@bot.message_handler(commands=["relation"])
+def relation(message):
+    chat = message.chat
+    if chat.type in ["group", "supergroup"]:
+        try:
+            members = bot.get_chat_administrators(chat.id)
+            if len(members) < 2:
+                bot.reply_to(message, "Group me kam se kam 2 admins hone chahiye.")
+                return
+            member1 = random.choice(members).user.first_name
+            member2 = random.choice([m.user.first_name for m in members if m.user.first_name != member1])
+            relation = random.choice(RELATIONS)
+            bot.reply_to(message, f"{member1} ❤️ {member2} = {relation}")
+        except Exception as e:
+            bot.reply_to(message, "Error fetching members. Ensure bot is admin.")
+    else:
+        bot.reply_to(message, "Ye command group me hi kaam karega.")
 
-    members_count = await chat.get_member_count()
-    if members_count < 2:
-        await update.message.reply_text("Kam se kam 2 member hone chahiye 😅")
-        return
+# Pair command (sirf admin ka naam le)
+@bot.message_handler(commands=["pair"])
+def pair(message):
+    chat = message.chat
+    if chat.type in ["group", "supergroup"]:
+        admin_name = message.from_user.first_name
+        pair_name = random.choice(PAIR_NAMES)
+        bot.reply_to(message, f"{admin_name} ke liye pair: {pair_name}")
+    else:
+        bot.reply_to(message, "Ye command group me hi kaam karega.")
 
-    admins = await context.bot.get_chat_administrators(chat.id)
-    users = [admin.user for admin in admins]
-    if len(users) < 2:
-        await update.message.reply_text("Kam se kam 2 admin hone chahiye 😅")
-        return
+# All truths/dares
+@bot.message_handler(commands=["all"])
+def all_items(message):
+    text = "💡 Truths:\n" + "\n".join(TRUTHS) + "\n\n💪 Dares:\n" + "\n".join(DARES)
+    bot.reply_to(message, text)
 
-    u1, u2 = random.sample(users, 2)
-    pair_name = random.choice(RELATIONS)  # Reuse RELATIONS for fun pairs
-    msg = f"💘 Special Pair 💘\n\n{u1.mention_html()} ❤️ {u2.mention_html()}\n\n✨ <b>{pair_name}</b>"
-    await update.message.reply_html(msg)
-
-# ===================== MAIN =====================
-TOKEN = os.getenv("TOKEN")  # Render me environment variable me daala hua token
-
-async def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("truth", truth))
-    app.add_handler(CommandHandler("dare", dare))
-    app.add_handler(CommandHandler("relation", relation))
-    app.add_handler(CommandHandler("pair", pair))
-
-    print("🤖 Bot is running...")
-    await app.run_polling()
-
+# ---------------- RUN BOT ---------------- #
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    bot.infinity_polling()
