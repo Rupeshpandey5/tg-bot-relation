@@ -1,10 +1,9 @@
 import os
 import random
-import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from flask import Flask
-import threading
+import asyncio
 
 # ---------------- ENV VARIABLES ---------------- #
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -106,9 +105,7 @@ PAIR_NAMES = [
 
 # ---------------- TELEGRAM HANDLERS ---------------- #
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Welcome! Use /truth, /dare, /relation, /pair"
-    )
+    await update.message.reply_text("Welcome! Use /truth, /dare, /relation, /pair")
 
 async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice(TRUTHS))
@@ -121,8 +118,8 @@ async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Add at least 2 members in MEMBERS env variable.")
         return
     pair = random.sample(MEMBERS, 2)
-    relation = random.choice(RELATIONS)
-    await update.message.reply_text(f"{pair[0]} ❤️ {pair[1]} : {relation}")
+    relation_name = random.choice(RELATIONS)
+    await update.message.reply_text(f"{pair[0]} ❤️ {pair[1]} : {relation_name}")
 
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(MEMBERS) < 2:
@@ -140,9 +137,6 @@ def index():
     return "Bot is running!"
 
 def start_bot():
-    asyncio.run(application.run_polling())
-
-if __name__ == "__main__":
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
@@ -151,8 +145,13 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("relation", relation))
     application.add_handler(CommandHandler("pair", pair))
 
-    # Start bot in a separate thread
-    threading.Thread(target=start_bot).start()
+    # run polling in main thread without stop_signals to avoid Render async errors
+    application.run_polling(stop_signals=None)
 
-    # Start Flask server
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+# ---------------- RUN BOT ---------------- #
+if __name__ == "__main__":
+    # Flask runs on separate asyncio loop
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, start_bot)
+    # Run Flask server
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), use_reloader=False)
