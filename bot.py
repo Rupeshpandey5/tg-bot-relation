@@ -78,6 +78,16 @@ PAIRS = [
 "✨ Perfect Match","🌙 Night Duo","☀️ Sunshine Pair","🎯 Exact Match"
 ]
 
+# ---------------- SHAYARI ---------------- #
+def shayari_line(u1, u2, rel):
+    lines = [
+        f"💖 {u1} ❤️ {u2}\n✨ {rel}\n💫 Rab ne likhi hai yeh kahani, dono ki jodi lage mastani!",
+        f"🌸 {u1} 💞 {u2}\n🔥 {rel}\n💌 Dil se dil tak connection strong, saath rahe toh life hai long!",
+        f"👑 {u1} 💖 {u2}\n💫 {rel}\n🌹 Yeh rishta nahi khel, dono ek dusre ke dil ka mail!",
+        f"💓 {u1} 💘 {u2}\n✨ {rel}\n🔥 Jodi ho toh aisi ho, full vibe aur classy ho!"
+    ]
+    return random.choice(lines)
+
 # ---------------- COMMANDS ---------------- #
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -89,39 +99,47 @@ async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def dare(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🎯 Dare:\n{random.choice(DARES)}")
 
-# 🔥 BETTER SHAYARI
-def shayari_line(u1, u2, rel):
-    lines = [
-        f"💖 {u1} ❤️ {u2}\n✨ {rel}\n💫 Rab ne likhi hai yeh kahani, dono ki jodi lage mastani!\n🌔🌹Teri muskaan meri duniya ban gayi,
-Har khushi teri yaadon mein sama gayi.🥀🥀
-Your smile has become my entire world,
-Every happiness blends perfectly into your memories.🌙🌙",
-        f"🌸 {u1} 💞 {u2}\n🔥 {rel}\n💌 Dil se dil tak connection strong, saath rahe toh life hai long!\n🌔🍁Aankhon mein sapne tere hi sajaye hain,☘️
-Dil mein bas tere ehsaas chhupaaye hain.
-Dreams of you fill my eyes every night,
-My heart hides only feelings for you inside.🌴🎄",
-        f"👑 {u1} 💖 {u2}\n💫 {rel}\n🌹 Yeh rishta nahi khel, dono ek dusre ke dil ka mail!",
-        f"💓 {u1} 💘 {u2}\n✨ {rel}\n🔥 Jodi ho toh aisi ho, full vibe aur classy ho!"
-    ]
-    return random.choice(lines)
-
+# 🔥 RELATION (random members)
 async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(context.args) < 2:
-        return await update.message.reply_text("Use: /relation user1 user2")
+    chat = update.effective_chat
+    members = await context.bot.get_chat_administrators(chat.id)
+    users = [m.user for m in members if not m.user.is_bot]
 
-    u1, u2 = context.args[:2]
+    if len(users) < 2:
+        return await update.message.reply_text("Members kam hai 😅")
+
+    u1, u2 = random.sample(users, 2)
+
+    name1 = u1.mention_html()
+    name2 = u2.mention_html()
+
     rel = random.choice(RELATIONS)
 
-    await update.message.reply_text(shayari_line(u1, u2, rel))
+    await update.message.reply_text(
+        shayari_line(name1, name2, rel),
+        parse_mode="HTML"
+    )
 
+# 🔥 PAIR (only admins)
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(context.args) < 2:
-        return await update.message.reply_text("Use: /pair user1 user2")
+    chat = update.effective_chat
+    admins = await context.bot.get_chat_administrators(chat.id)
+    users = [a.user for a in admins if not a.user.is_bot]
 
-    u1, u2 = context.args[:2]
+    if len(users) < 2:
+        return await update.message.reply_text("Admins kam hai 😅")
+
+    u1, u2 = random.sample(users, 2)
+
+    name1 = u1.mention_html()
+    name2 = u2.mention_html()
+
     pair = random.choice(PAIRS)
 
-    await update.message.reply_text(shayari_line(u1, u2, pair))
+    await update.message.reply_text(
+        shayari_line(name1, name2, pair),
+        parse_mode="HTML"
+    )
 
 # ---------------- HANDLERS ---------------- #
 telegram_app.add_handler(CommandHandler("start", start))
