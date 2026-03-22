@@ -1,6 +1,5 @@
 import os
 import random
-import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -10,11 +9,11 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 PORT = int(os.environ.get("PORT", 10000))
 
-# ---------------- FLASK + TELEGRAM APP ---------------- #
+# ---------------- APP ---------------- #
 app = Flask(__name__)
 telegram_app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# ---------------- TRUTH ---------------- #
+# ---------------- TRUTH (40) ---------------- #
 TRUTHS = [
 "Sabse bada secret kya hai? 🤫","Kisi pe crush hai? 😏","Last kis se chat ki thi? 📱","Pehla pyaar kab hua? 💕",
 "Sabse embarrassing moment? 😳","Kabhi jhoot pakda gaya? 😅","Kisi ko propose kiya? 💘","Favorite person kaun hai? ❤️",
@@ -34,7 +33,7 @@ TRUTHS = [
 "Aapne kab kisi ke saath overreact kiya?","Aapki dream destination kahaan hai?"
 ]
 
-# ---------------- DARE ---------------- #
+# ---------------- DARE (30) ---------------- #
 DARES = [
 "Dance karke dikhao bina music ke! 💃","Apne phone ka last selfie share karo! 📸",
 "Ek random emoji se poora sentence type karo 😂","Funny face selfie bhejo 😜",
@@ -53,7 +52,7 @@ DARES = [
 "Kisi ko 'I miss you' bolo 😢","Apni feeling emoji me batao 😊"
 ]
 
-# ---------------- RELATION ---------------- #
+# ---------------- RELATION (40) ---------------- #
 RELATIONS = [
 "🤝 Besties","🖤 Toxic & Loyal","😈 Devil & Angel","👑 King & Queen",
 "🐍 Snake & Charmer","⚡ Thunder & Lightning","😎 Boss & Queen","🤪 Drama Duo",
@@ -67,7 +66,7 @@ RELATIONS = [
 "🖤 Dark Love","💫 Star Couple","🔥 Fire Duo","💖 Dream Couple"
 ]
 
-# ---------------- PAIR ---------------- #
+# ---------------- PAIR (40) ---------------- #
 PAIRS = [
 "👫 Dynamic Duo","💑 Sweethearts","🌈 Rainbow Friends","🎯 Perfect Pair",
 "💥 Power Couple","🍀 Lucky Pair","🎵 Harmony Duo","⚡ Electric Pair",
@@ -91,23 +90,28 @@ async def truth(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def dare(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🎯 Dare:\n{random.choice(DARES)}")
 
-# ---------------- SHAYARI ---------------- #
+# 🔥 FIXED SHAYARI
 def shayari_line(u1, u2, rel):
     lines = [
-        f"💖 {u1} ❤️ {u2}\n✨ {rel}\n💫 Rab ne likhi hai yeh kahani, dono ki jodi lage mastani!\n🌔🍁Aankhon mein sapne tere hi sajaye hain,☘️
-Dil mein bas tere ehsaas chhupaaye hain.
-Dreams of you fill my eyes every night,
-My heart hides only feelings for you inside.🌴🎄",
-        f"🌸 {u1} 💞 {u2}\n🔥 {rel}\n💌 Dil se dil tak connection strong, saath rahe toh life hai long!",
-        f"👑 {u1} 💖 {u2}\n💫 {rel}\n🌹 Yeh rishta nahi khel, dono ek dusre ke dil ka mail!",
-        f"💓 {u1} 💘 {u2}\n✨ {rel}\n🔥 Jodi ho toh aisi ho, full vibe aur classy ho!\n🌔🌹Teri muskaan meri duniya ban gayi,
-Har khushi teri yaadon mein sama gayi.🥀🥀
-Your smile has become my entire world,
-Every happiness blends perfectly into your memories.🌙🌙"
+        f"""💖 {u1} ❤️ {u2}
+✨ {rel}
+💫 Rab ne likhi hai yeh kahani, dono ki jodi lage mastani!
+🌔🍁 Aankhon mein sapne tere hi sajaye hain, ☘️ Dil se dil ka rishta hamesha rahe rahe!""",
+        f"""🌸 {u1} 💞 {u2}
+🔥 {rel}
+💌 Dil se dil tak connection strong, saath rahe toh life hai long!
+🎶 Har pal me music, dono ki jodi hai magic!""",
+        f"""👑 {u1} 💖 {u2}
+💫 {rel}
+🌹 Yeh rishta nahi khel, dono ek dusre ke dil ka mail!
+✨ Jodi aisi ho, duniya bhi kahe kya kamaal!""",
+        f"""💓 {u1} 💘 {u2}
+✨ {rel}
+🔥 Jodi ho toh aisi ho, full vibe aur classy ho!
+💫 Har din, har pal, dono ki yaari amazing ho!"""
     ]
     return random.choice(lines)
 
-# ---------------- RELATION CMD ---------------- #
 async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 2:
         return await update.message.reply_text("Use: /relation user1 user2")
@@ -115,13 +119,12 @@ async def relation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rel = random.choice(RELATIONS)
     await update.message.reply_text(shayari_line(u1, u2, rel))
 
-# ---------------- PAIR CMD ---------------- #
 async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 2:
         return await update.message.reply_text("Use: /pair user1 user2")
     u1, u2 = context.args[:2]
-    pair_choice = random.choice(PAIRS)
-    await update.message.reply_text(shayari_line(u1, u2, pair_choice))
+    pair = random.choice(PAIRS)
+    await update.message.reply_text(shayari_line(u1, u2, pair))
 
 # ---------------- HANDLERS ---------------- #
 telegram_app.add_handler(CommandHandler("start", start))
@@ -143,6 +146,7 @@ def home():
 
 # ---------------- START ---------------- #
 if __name__ == "__main__":
-    # Properly await async webhook
+    import asyncio
+    # Use asyncio to await webhook properly
     asyncio.run(telegram_app.bot.set_webhook(f"{WEBHOOK_URL}/{BOT_TOKEN}"))
     app.run(host="0.0.0.0", port=PORT)
