@@ -19,6 +19,7 @@ def save_user(update: Update):
 # -------- DATA -------- #
 TRUTHS = [
     "Sabse bada secret kya hai? 🤫",
+    "tell me the reason of being in this platform?",
     "Group me sabse zyada kaun pasand hai? 😏",
     "Kabhi kisi pe secret crush raha hai? 💘",
     "Pehli baar pyaar kab hua tha? 💕",
@@ -49,6 +50,9 @@ TRUTHS = [
 
 DARES = [
     "Apna nickname batao 😎",
+    "tag someone from this gc and say you are mad",
+    "tag @pandey_02 and say will you marry me",
+    "@pandey_02 ko tag krke puchho kaise ho",
     "Group me 3 emojis bhejo 🔥😂💯",
     "Apni current feeling ek emoji me batao 😊",
     "Kisi ek member ko tag karke hi bolo 👋",
@@ -223,10 +227,10 @@ async def pair(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ✨ {pair_name} ✨
 
-🌸 Teri muskaan meri duniya ban gayi 🌸  
-💫 Har khushi teri yaadon mein sama gayi 💫  
-❤️ Your smile has become my entire world ❤️  
-🥰 Every happiness blends perfectly into your memories 🥰
+🌔🍁Aankhon mein sapne tere hi sajaye hain,☘️
+Dil mein bas tere ehsaas chhupaaye hain.
+Dreams of you fill my eyes every night,
+My heart hides only feelings for you inside.🌴🎄
 """
     await update.message.reply_html(msg)
 
